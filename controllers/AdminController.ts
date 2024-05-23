@@ -4,7 +4,7 @@ import { Vandor } from "../models";
 import { GeneratePassword, GenerateSalt } from "../utils";
 
 
-export const FindVendor = async (id: string | undefined, email?: string ) => {
+export const FindVandor = async (id: string | undefined, email?: string ) => {
     if (email) {
         return await Vandor.findOne({ email: email });
     }else if (id) {
@@ -15,7 +15,7 @@ export const FindVendor = async (id: string | undefined, email?: string ) => {
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
     const { name, ownerName, foodType, pincode, address, phone, email, password } = <CreateVandorInput>req.body
 
-    const exitsVandor = await FindVendor(undefined, email);
+    const exitsVandor = await FindVandor(undefined, email);
     if (exitsVandor !== null) {
         return res.json({ 'message': 'Vandor already exists'})
     }  
@@ -37,7 +37,8 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
         salt: salt,
         serviceAviable: false,
         coverImage: [],
-        rating: 0
+        rating: 0,
+        foods: []
     })
     return res.json(createVandor)
 }
@@ -51,7 +52,7 @@ export const GetVendors = async (req: Request, res: Response, next: NextFunction
 }
 
 export const GetVendorById = async (req: Request, res: Response, next: NextFunction) => {
-    const vandor = await FindVendor(req.params.id);
+    const vandor = await FindVandor(req.params.id);
     if (vandor === null) {
         return res.json({ 'message': 'Vandor not found'})   
     }

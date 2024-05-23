@@ -62,10 +62,10 @@ const VandorSchema = new Schema(
     rating: {
       type: Number,
     },
-    // foods: {
-    //   type: [Schema.Types.ObjectId],
-    //   ref: "food",
-    // },
+    foods: {
+      type: [Schema.Types.ObjectId],
+      ref: "food",
+    },
   },
   {
     toJSON: {
