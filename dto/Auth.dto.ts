@@ -1,3 +1,5 @@
 import { VandorPayLoad } from "./Vandor.dto";
 
-export type AuthPayLoad = VandorPayLoad ;
+import { CustomerPayLoad } from "./Customer.dto";
+
+export type AuthPayLoad = VandorPayLoad  | CustomerPayLoad;
