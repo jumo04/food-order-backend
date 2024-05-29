@@ -27,3 +27,9 @@ export interface VandorPayLoad{
     name: string;
     foodTypes: [string];
 }
+
+export interface ProcessOrderInput {
+    status: string;
+    remarks: string;
+    time: number;
+}

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { FindVandor, GetVendorById } from ".";
 import { ValidatePassword, GenerateSignature } from "../utils";
-import { UpdateVandorInput, VandorLoginInputs } from "../dto";
-import { Food } from "../models";
+import { ProcessOrderInput, UpdateVandorInput, VandorLoginInputs } from "../dto";
+import { Customer, Food, Order } from "../models";
 import { CreateFoodInput } from "../dto";
 
 
@@ -136,4 +136,47 @@ export const GetFoods = async (req: Request, res: Response, next: NextFunction) 
         }
     }
     return res.json({ 'message': 'Something went wrong getting the food'});
+}
+
+export const GetCurrentOrders = async (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user;
+    if (user) {
+        const orders = await Order.find({ vandorId: user._id }).populate('items.food');
+        if (orders != null) {
+            return res.status(200).json(orders);
+        }
+    }
+    return res.status(404).json({ message: 'Orders not found' });
+}
+
+export const GetOrderDetails = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    if (id) {
+        const order = await Order.findById(id).populate('items.food');
+        if (order != null) {
+            return res.status(200).json(order);
+        }
+    }
+    return res.status(404).json({ message: 'Order not found' });
+}
+
+export const ProcessOrder = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+
+    const { status, remarks, time } = <ProcessOrderInput>req.body;
+
+    if (id) {
+        const order = await Order.findById(id);
+        order.orderStatus = status;
+        order.remarks = remarks;
+        if (time){
+            order.readyTime = time;
+        }
+        const saveResult = await order.save();
+        if (saveResult) {
+            return res.status(200).json(saveResult);
+        }
+    }
+    return res.status(404).json({ message: 'Unable to process the order!' });
+
 }
