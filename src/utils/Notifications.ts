@@ -1,4 +1,4 @@
-import { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } from "../config";
+import { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } from "../config"
 //Email
 
 
@@ -23,7 +23,7 @@ export const onRequestOtp = async (otp: number, toPhoneNumber: string) => {
         body: `Your OTP is ${otp}`,
         from: '+14793516129',
         to: '+18777804236'
-    });
+    }); 
 
     if (response) {
         return response

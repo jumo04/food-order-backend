@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { FindVandor, GetVendorById } from "../controllers";
+import { FindVandor, GetVendorById } from ".";
 import { ValidatePassword, GenerateSignature } from "../utils";
 import { UpdateVandorInput, VandorLoginInputs } from "../dto";
 import { Food } from "../models";
