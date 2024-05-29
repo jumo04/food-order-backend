@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
-import { CustomerInput, EditCustomerProfileInputs, OrderInputs, UserLoginInputs } from "../dto";
+import { AddToCartInputs, CustomerInput, EditCustomerProfileInputs, OrderInputs, UserLoginInputs } from "../dto";
 import { validate } from "class-validator";
 import { plainToClass } from "class-transformer";
 import { Customer, Food, Order } from "../models";
@@ -184,8 +184,86 @@ export const UpdateCustomerProfile = async (req: Request, res: Response, next: N
 
 //cart
 
-export const AddToCart = (req: Request, res: Response, next: NextFunction) => {
-    return res.json('hello from customer');
+export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
+
+    const customer = req.user;
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id).populate('cart.food');
+        let cartItems = Array();
+        const { _id, unit } = <AddToCartInputs>req.body;
+
+        const food = await Food.findById(_id);
+        if (food) {
+
+            if (profile != null) {
+                //check cart profile
+                cartItems = profile.cart;
+
+                if (cartItems.length > 0) {
+                    //check and update cart
+                    const existFoodItems = cartItems.filter(item => item.food._id.toString() == _id);
+                    if (existFoodItems.length > 0) {
+                        //searching for the index of a existing food item on the cart 
+                        const index = cartItems.indexOf(existFoodItems[0]);
+                        
+                        if(unit > 0){
+                            cartItems[index] = { food, unit };
+                        }
+                        else{
+                            //removing for the cart items
+                            cartItems.splice(index, 1);
+                        }
+                    } else {
+                        cartItems.push({ food, unit });
+                    }
+                }else{
+                    //add a new item to cart
+                    cartItems.push({ food, unit });
+                }
+
+                if(cartItems){
+                    profile.cart = cartItems as any;
+                    const result = await profile.save();
+                    return res.status(200).json(result.cart);
+                }
+
+            }
+        }
+        
+    }
+  return res.status(404).json({ message: 'Unable to create a cart' });
+
+}
+
+export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user;
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id).populate('cart.food');
+        if (profile) {
+            return res.status(200).json(profile.cart);
+        }
+    }
+
+    return res.status(404).json({ message: 'Cart its empty' });
+}
+
+export const DeleteCart = async (req: Request, res: Response, next: NextFunction) => {
+
+    const customer = req.user;
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id).populate('cart.food');
+        if (profile != null) {
+            profile.cart = [] as any;
+            const result = await profile.save();
+            return res.status(200).json(result);
+        }
+    }
+
+    return res.status(404).json({ message: 'Cart its already empty' });
+
 }
 
 //order

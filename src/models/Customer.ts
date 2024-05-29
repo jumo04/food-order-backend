@@ -15,6 +15,7 @@ interface CustomerDoc extends Document {
     lat: number;
     lng: number;
     orders: [OrderDoc];
+    cart: [any];
 }
 
 const CustomerSchema = new Schema(
@@ -68,7 +69,20 @@ const CustomerSchema = new Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "order"
             }
-        ] 
+        ],
+        cart: [
+            {
+                food: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "food",
+                    required: true
+                },
+                unit: {
+                    type: Number,
+                    required: true
+                }
+            }
+        ]
         
     },
     {   toJSON: { transform(doc, ret) {

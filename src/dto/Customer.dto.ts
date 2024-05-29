@@ -43,3 +43,8 @@ export class OrderInputs {
     unit: number;
 
 }
+
+export class AddToCartInputs {
+    _id: string;
+    unit: number;
+}
