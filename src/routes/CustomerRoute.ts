@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
-import { CreateCustomer, CustomerLogin, GetCustomerProfile, UpdateCustomerProfile, VerifyCustomer, RequestOtp } from "../controllers/CustomerController";
+import { CreateCustomer, CustomerLogin, GetCustomerProfile, UpdateCustomerProfile, VerifyCustomer, RequestOtp, CreateOrder, GetOrders, GetOrder } from "../controllers";
 import { Authenticate } from "../middlewares";
 
 const router = express.Router();
@@ -29,8 +29,9 @@ router.get('/otp', RequestOtp);
 // router.delete('/cart', DeleteCart);
 
 // //order
-// router.post('/order', CreateOrder);
-// router.get('/order', GetOrder);
+router.post('/create-order', CreateOrder);
+router.get('/orders', GetOrders);
+router.get('/order/:id', GetOrder);
 
 // //payment
 // router.post('/payment', CreatePayment);

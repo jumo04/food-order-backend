@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from "express";
-import { CustomerInput, EditCustomerProfileInputs, UserLoginInputs } from "../dto";
+import { CustomerInput, EditCustomerProfileInputs, OrderInputs, UserLoginInputs } from "../dto";
 import { validate } from "class-validator";
 import { plainToClass } from "class-transformer";
-import { Customer } from "../models";
+import { Customer, Food, Order } from "../models";
 import { GenerateOtp, GeneratePassword, GenerateSalt, GenerateSignature, onRequestOtp, ValidatePassword } from "../utils";
 
 // singup and create customer
@@ -40,7 +40,8 @@ export const CreateCustomer = async (req: Request, res: Response, next: NextFunc
         lng: 0,
         firstName: '',
         lastName: '',
-        address: ''
+        address: '',
+        orders: []
     });
 
     if (result) {
@@ -189,8 +190,85 @@ export const AddToCart = (req: Request, res: Response, next: NextFunction) => {
 
 //order
 
-export const CreateOrder = (req: Request, res: Response, next: NextFunction) => {
-    return res.json('hello from customer');
+export const CreateOrder = async (req: Request, res: Response, next: NextFunction) => {
+    //grab current user
+    const customer = req.user;
+
+    if (customer) {
+        //create order id
+        const orderId = `${Math.floor(Math.random() * 89999) + 1000}`;
+        const profile = await Customer.findById(customer._id);
+        //grab order items from request [{id:sdfs , unit:asdf }]
+        const cart = <[OrderInputs]> req.body;
+        let cartItems = Array();
+        let total = 0.0;
+        const foods = await Food.find().where('_id').in(cart.map(x => x._id)).exec();
+        
+        //calculate order amount
+        foods.map(food => {
+            cart.map(({ _id, unit }) => {
+                if (food._id == _id) {
+                    total += (food.price * unit);
+                    cartItems.push({ food, unit });
+                }
+        });
+
+        })
+        //create order with item description
+        if(cartItems){
+            // create order
+            const currentOrder = await Order.create({
+                orderId: orderId,
+                items: cartItems,
+                totalAmount: total,
+                orderDate: new Date(),
+                paidThrough: 'COD',
+                paymentReponse: '',
+                orderStatus: 'Waiting'
+            });
+
+            //finally update orders user account
+            if (currentOrder) {
+                profile.orders.push(currentOrder);
+                await profile.save();
+                return res.status(201).json(currentOrder);
+            }
+        }
+        }
+
+     return res.status(400).json({ message: 'Something went wrong' });
+
+    }
+
+export const GetOrders = async (req: Request, res: Response, next: NextFunction) => {
+    
+    const customer = req.user;
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id).populate('orders');
+        if (profile) {
+            const orders = profile.orders;
+            return res.status(200).json(orders);
+        }
+    }
+
+    return res.status(404).json({ message: 'Orders not found' });
+}
+
+export const GetOrder = async (req: Request, res: Response, next: NextFunction) => {
+
+    const { id } = req.params;
+
+    const user = req.user;
+
+    if (user) {
+        const order = await Order.findById(id).populate('items.food');
+        if (order) {
+            return res.status(200).json(order);
+        }
+    }
+
+    return res.status(404).json({ message: 'Order not found' });
 }
 
 
