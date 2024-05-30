@@ -14,6 +14,8 @@ interface VandorDoc extends Document {
   coverImage: [string];
   rating: number;
   foods: any;
+  lat: number;
+  lng: number;
 }
 
 const VandorSchema = new Schema(
@@ -65,6 +67,12 @@ const VandorSchema = new Schema(
     foods: {
       type: [Schema.Types.ObjectId],
       ref: "food",
+    },
+    lat: {
+      type: Number,
+    },
+    lng: {
+      type: Number,
     },
   },
   {

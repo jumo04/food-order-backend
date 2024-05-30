@@ -2,8 +2,9 @@ import express, { Request, Response, NextFunction } from "express";
 import { AddToCartInputs, CustomerInput, EditCustomerProfileInputs, OrderInputs, UserLoginInputs } from "../dto";
 import { validate } from "class-validator";
 import { plainToClass } from "class-transformer";
-import { Customer, Food, Order } from "../models";
+import { Customer, Delivery, Food, Offer, Order, Vandor } from "../models";
 import { GenerateOtp, GeneratePassword, GenerateSalt, GenerateSignature, onRequestOtp, ValidatePassword } from "../utils";
+import Transaction from "../models/Transaction";
 
 // singup and create customer
 
@@ -266,18 +267,69 @@ export const DeleteCart = async (req: Request, res: Response, next: NextFunction
 
 }
 
+//entregar notificacion
+
+const assingOrderForDelivery = async (orderId: string, vandorId: string) => {
+    //find the vendor
+    const vandor = await Vandor.findById(vandorId);
+
+    if (vandor) {
+        const areaCode = vandor.pincode;
+        const vandorLat = vandor.lat;
+        const vandorLng = vandor.lng;
+
+        // find the available delivery person
+        const delivery = await Delivery.find({ pincode: areaCode, verified: true, isAvailable: true });
+        
+        if (delivery) {
+            //check the nearest delivery person and assign the order
+            const currentOrder = await Order.findById(orderId);
+            if (currentOrder) {
+                // currentOrder.deliveryId = delivery;
+                currentOrder.deliveryId = delivery[0].id;
+                 const result = await currentOrder.save();
+                 //notify to vendor for reeived new order using firebase push notification
+            }
+        }
+    }
+    
+}
+
 //order
 
+const validateTransactionId = async (txnId: string) => {
+    const currentTransaction = await Transaction.findById(txnId);
+    if (currentTransaction) {
+        if (currentTransaction.status.toLowerCase() !== 'failed') {
+            return {status: true, currentTransaction};
+        } 
+    }
+
+    return {status: false, currentTransaction};
+}
+
+
 export const CreateOrder = async (req: Request, res: Response, next: NextFunction) => {
+
+
     //grab current user
     const customer = req.user;
 
+    const { txnId, amount, items } = <OrderInputs>req.body;
+
     if (customer) {
+
+        //validate trasaction id
+        const { status, currentTransaction } = await validateTransactionId(txnId);
+
+        if (!status) {
+            return res.status(404).json({ message: "Error with create order" });
+        }
         //create order id
         const orderId = `${Math.floor(Math.random() * 89999) + 1000}`;
         const profile = await Customer.findById(customer._id);
         //grab order items from request [{id:sdfs , unit:asdf }]
-        const cart = <[OrderInputs]> req.body;
+        const cart = items;
         let cartItems = Array();
         let total = 0.0;
         let vandorId;
@@ -302,15 +354,13 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
                 vandorId: vandorId,
                 items: cartItems,
                 totalAmount: total,
+                paidAmount: amount,
                 orderDate: new Date(),
-                paidThrough: 'COD',
-                paymentReponse: '',
                 orderStatus: 'Waiting',
                 remarks: '',
                 deliveryId: '',
-                appliedOffers: false,
-                offerId: null,
-                readyTime: 45
+                readyTime: 45,
+                txnId: txnId
 
             });
 
@@ -318,15 +368,20 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
             if (currentOrder) {
                 profile.cart = [] as any;
                 profile.orders.push(currentOrder);
-                await profile.save();
-                return res.status(201).json(profile);
+                currentTransaction.verndorId = vandorId;
+                currentTransaction.orderId = orderId;
+                currentTransaction.status = "CONFIRMED";
+                await currentTransaction.save();
+                assingOrderForDelivery(currentOrder.id, vandorId);
+                const result = await profile.save();
+                return res.status(201).json(result);
             }
         }
         }
 
      return res.status(400).json({ message: 'Something went wrong' });
 
-    }
+}
 
 export const GetOrders = async (req: Request, res: Response, next: NextFunction) => {
     
@@ -359,9 +414,57 @@ export const GetOrder = async (req: Request, res: Response, next: NextFunction) 
     return res.status(404).json({ message: 'Order not found' });
 }
 
+export const VerifyOffer = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    const customer = req.user;
+    if(customer){
+        const appliedOffer = await Offer.findById(id);
+        if(appliedOffer){
+            if(appliedOffer.promoType === 'USER'){
+                //only can apply one by user
+            }else{
+                if(appliedOffer.isActive){
+                    return res.status(200).json({message: 'offer is valid', offer: appliedOffer});
+                }
+            }
+        }
+    }
+}
+
 
 // payment
 
-export const Payment = (req: Request, res: Response, next: NextFunction) => {
-    return res.json('hello from customer');
+export const CreatePayment = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user;
+    const { amount, offerId, paymentMode } = req.body;
+
+    let payableAmount = Number(amount);
+    if(offerId){
+        const appliedOffer = await Offer.findById(offerId);
+        if(appliedOffer){
+            if(appliedOffer.isActive){
+                payableAmount = (payableAmount - appliedOffer.offerAmount);
+            }
+        }
+    }
+    //perform payment gateway charge API CALL
+
+    //right after payment gateway success / failure response
+
+    //create record of transaction
+    const transaction = await Transaction.create({
+        customer: customer._id,
+        verndorId: '',
+        orderId: '',
+        orderValue: payableAmount,
+        paymentMode: paymentMode,
+        offerUsed: offerId || 'NA',
+        status: 'OPEN',
+        paymentResponse: 'Payment is cash on delivery'
+    });
+
+
+    //return transaction I
+    return res.status(200).json(transaction);
+
 }

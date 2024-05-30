@@ -1,11 +1,17 @@
 import express, { Request, Response, NextFunction } from "express";
-import { CreateVendor, GetVendors, GetVendorById } from "../controllers";
+import { CreateVendor, GetVendors, GetVendorById, GetTransactionById, GetTransactions, VerifyDeliveryUser, GetDeliveryUser } from "../controllers";
 
 const router = express.Router();
 
 router.post('/vandor', CreateVendor);
 router.get('/vandors', GetVendors);
 router.get('/vandor/:id', GetVendorById);
+
+router.get('/transaction/:id', GetTransactionById)
+router.get('/transactions', GetTransactions);
+
+router.put('/delivery/verify', VerifyDeliveryUser);
+router.get('/delivery/users', GetDeliveryUser);
 
 
 

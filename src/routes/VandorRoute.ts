@@ -10,6 +10,9 @@ import {
   ProcessOrder,
   GetCurrentOrders,
   GetOrderDetails,
+  GetOffers,
+  CreateOffer,
+  UpdateOffer,
 } from "../controllers";
 import { Authenticate } from "../middlewares";
 
@@ -44,5 +47,12 @@ router.get("/foods", GetFoods);
 router.get("/orders", GetCurrentOrders);
 router.put("/order/:id/process", ProcessOrder);
 router.get("/order/:id", GetOrderDetails);
+
+
+//offers
+
+router.get('/offers', GetOffers);
+router.post('/offer', CreateOffer);
+router.put('/offer/:id', UpdateOffer);
 
 export { router as VandorRoute };

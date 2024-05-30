@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
-import { Vandor, FoodDoc } from "../models";
+import { Vandor, FoodDoc, Offer } from "../models";
 
 
 export const GetFoodAvailability = async (req: Request, res: Response, next: NextFunction) => {
@@ -80,3 +80,16 @@ export const GetRestaurantById = async (req: Request, res: Response, next: NextF
     return res.status(40).json({ message: 'Data not found' });
 }
 
+export const GetAvailableOffers = async (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user;
+    const pincode = req.params.pincode;
+    //CONTROLLAR EL ERROR DE AUTORIZACION UNA VEZ QUE EXPIRE EL TOKEN AVISAR 
+
+    const offers = await Offer.find({pincode: pincode, isActive: true});
+
+    if (offers) {
+        return res.status(200).json(offers);
+    }
+    return res.status(40).json({ message: 'Offers not found' });
+
+}

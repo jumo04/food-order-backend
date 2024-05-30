@@ -33,3 +33,20 @@ export interface ProcessOrderInput {
     remarks: string;
     time: number;
 }
+
+export interface CreateOfferInputs {
+    offerType: string;// VENDOR //GENERIC
+    vandors: [any];//['5f9e7c8d7f9e7c8d7f9e7c8d']
+    title: string; //inr 200 OFF ON WEEK DAYS
+    description: string;//any descriptions with terms and conditions
+    minValue: number; /// minimum amount shloud be 300
+    offerAmount: number; //200
+    startValidaty: Date;
+    endValidity: Date;
+    promoCode: string;//WEEK200
+    promoType: string;//USER //ALL//BANK//CARD
+    bank: [any];
+    bins: [any];
+    pincode: string;
+    isActive: boolean;
+}
